@@ -438,6 +438,14 @@ class ADB():
         self.run_cmd("%s %s" % (cmd , pkgapp) )
         return self.__output
 
+    def run_activity(self, cmp):
+        import string
+        """
+        Run the specified activity on the device
+        """
+        fullCmpStr = string.rsplit(cmp, '.', 1)[0] + '/' + cmp
+        return self.shell_command('am start -a android.intent.action.MAIN -n %s' % (fullCmpStr))
+
     def find_binary(self,name=None):
         """
         Look for a binary file on the device
