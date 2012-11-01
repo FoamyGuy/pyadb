@@ -6,6 +6,7 @@
 try:
     import sys
     from os import popen3 as pipe
+    import string
 except ImportError,e:
     # should never be reached
     print "[f] Required module missing. %s" % e.args[0]
@@ -84,7 +85,10 @@ class ADB():
             return
 
         try:
-            w,r,e = pipe(self.__build_command__(cmd), mode='r')
+            """
+            I had to remove the mode="r" param to make it work on windows.
+            """
+            w,r,e = pipe(self.__build_command__(cmd))
             self.__output = self.__read_output__(r)
             self.__error = self.__read_output__(e)
             r.close()
@@ -413,7 +417,6 @@ class ADB():
         cmd = "uninstall %s" % (package if keepdata is True else "-k %s" % package )
         self.run_cmd(cmd)
         return self.__output
-
     def install(self,fwdlock=False,reinstall=False,sdcard=False,pkgapp=None):
         """
         Push this package file to the device and install it
@@ -438,14 +441,6 @@ class ADB():
         self.run_cmd("%s %s" % (cmd , pkgapp) )
         return self.__output
 
-    def run_activity(self, cmp):
-        import string
-        """
-        Run the specified activity on the device
-        """
-        fullCmpStr = string.rsplit(cmp, '.', 1)[0] + '/' + cmp
-        return self.shell_command('am start -a android.intent.action.MAIN -n %s' % (fullCmpStr))
-
     def find_binary(self,name=None):
         """
         Look for a binary file on the device
@@ -462,3 +457,34 @@ class ADB():
             self.__output = self.__output.strip()
 
         return self.__output
+
+    def get_device_model(self):
+        """
+        Return the model of the device
+        """
+        modelLine = self.shell_command('cat /system/build.prop | grep "product.model"')
+        model = string.split(modelLine, '=', 1)[1]
+        model = string.replace(model, '\r\n', '')
+        return model
+    def start_activity(self, cmp):
+        """
+        Run the specified activity on the device
+        
+        """
+        fullCmpStr = string.rsplit(cmp, '.', 1)[0] + '/' + cmp
+        return self.shell_command('am start -a android.intent.action.MAIN -n %s' % (fullCmpStr))
+    
+    def force_stop(self, package):
+        """
+        Try to force stop the package
+        """
+        self.shell_command('am force-stop %s' % (package))
+        
+    def start_service(self, cmp):
+        """
+        Start the given service.
+        
+        """
+        fullCmpStr = string.rsplit(cmp, '.', 1)[0] + '/' + cmp
+        print fullCmpStr
+        return self.shell_command('am startservice %s' % (fullCmpStr))
